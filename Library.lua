@@ -380,13 +380,24 @@ function Library:GiveSignal(Signal)
 end
 
 function Library:Unload()
+    -- Stop matrix and blur
+    Library._MatrixActive = false
+
+    if Library.MatrixGui and Library.MatrixGui.Parent then
+        Library.MatrixGui:Destroy()
+    end
+
+    if Library.MatrixBlur and Library.MatrixBlur.Parent then
+        Library.MatrixBlur:Destroy()
+    end
+
     -- Unload all of the signals
     for Idx = #Library.Signals, 1, -1 do
         local Connection = table.remove(Library.Signals, Idx)
         Connection:Disconnect()
     end
 
-     -- Call our unload callback, maybe to undo some hooks etc
+    -- Call our unload callback, maybe to undo some hooks etc
     if Library.OnUnload then
         Library.OnUnload()
     end
@@ -423,36 +434,50 @@ do
     CenterFrame.Name = 'CenterFrame'
     CenterFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     CenterFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    CenterFrame.Size = UDim2.new(0, 200, 0, 200)
+    CenterFrame.Size = UDim2.new(0, 200, 0, 100)
     CenterFrame.BackgroundTransparency = 1
     CenterFrame.Parent = UEGui
 
-    local UELabel = Instance.new('TextLabel')
-    UELabel.Name = 'UELabel'
-    UELabel.AnchorPoint = Vector2.new(0.5, 0.5)
-    UELabel.Position = UDim2.new(0.5, 0, 0.5, 0)
-    UELabel.Size = UDim2.new(1, 0, 1, 0)
-    UELabel.BackgroundTransparency = 1
-    UELabel.Font = Enum.Font.Code
-    UELabel.TextSize = 72
-    UELabel.Text = "UE"
-    UELabel.TextColor3 = Color3.new(1, 1, 1)
-    UELabel.TextStrokeTransparency = 0.3
-    UELabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-    UELabel.Parent = CenterFrame
+    local layers = {}
+    local layerCount = 6
 
-    local UICorner = Instance.new('UICorner')
-    UICorner.CornerRadius = UDim.new(1, 0)
-    UICorner.Parent = CenterFrame
+    for i = 1, layerCount do
+        local depth = i / layerCount
+        local label = Instance.new('TextLabel')
+        label.Name = 'UELayer' .. i
+        label.AnchorPoint = Vector2.new(0.5, 0.5)
+        label.Position = UDim2.new(0.5, 0, 0.5, 0)
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Font = Enum.Font.Code
+        label.TextSize = 72
+        label.Text = "UE"
+        label.RichText = false
 
-    local UIStroke = Instance.new('UIStroke')
-    UIStroke.Color = Color3.new(1, 1, 1)
-    UIStroke.Thickness = 2
-    UIStroke.Transparency = 0.5
-    UIStroke.Parent = CenterFrame
+        if i == layerCount then
+            label.TextColor3 = Color3.new(1, 1, 1)
+            label.TextStrokeTransparency = 0.2
+            label.TextStrokeColor3 = Color3.new(0, 0, 0)
+        else
+            local gray = 0.3 + 0.7 * depth
+            label.TextColor3 = Color3.fromRGB(
+                math.floor(255 * gray),
+                math.floor(255 * gray),
+                math.floor(255 * gray)
+            )
+            label.TextStrokeTransparency = 0.6
+            label.TextStrokeColor3 = Color3.new(0, 0, 0)
+        end
+
+        label.ZIndex = i
+        label.Parent = CenterFrame
+        table.insert(layers, { Label = label, Depth = depth })
+    end
 
     Library.MatrixBlur = Blur
     Library.MatrixGui = UEGui
+    Library._UELayers = layers
+    Library._UECenter = CenterFrame
 
     Library._MatrixActive = false
 
@@ -461,13 +486,20 @@ do
         Library._MatrixActive = true
 
         CenterFrame.Visible = true
-        local angle = 0
+        local elapsed = 0
 
         task.spawn(function()
             while Library._MatrixActive do
                 local dt = task.wait()
-                angle = angle + 120 * dt
-                UELabel.Rotation = angle
+                elapsed = elapsed + dt
+
+                local swing = math.sin(elapsed * 1.8) * 18
+
+                for _, layer in ipairs(layers) do
+                    local offset = (1 - layer.Depth) * swing * 0.5
+                    layer.Label.Position = UDim2.new(0.5, offset, 0.5, 0)
+                    layer.Label.Rotation = swing * (1 - layer.Depth) * 0.3
+                end
             end
         end)
     end
@@ -475,7 +507,11 @@ do
     function Library:StopMatrix()
         Library._MatrixActive = false
         CenterFrame.Visible = false
-        UELabel.Rotation = 0
+
+        for _, layer in ipairs(layers) do
+            layer.Label.Position = UDim2.new(0.5, 0, 0.5, 0)
+            layer.Label.Rotation = 0
+        end
     end
 
     function Library:ToggleBlur(On)
