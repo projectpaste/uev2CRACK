@@ -404,7 +404,7 @@ Library:GiveSignal(ScreenGui.DescendantRemoving:Connect(function(Instance)
     end;
 end))
 
--- Blur + Matrix PC Characters
+-- Blur + UE Logo
 do
     local Lighting = game:GetService('Lighting')
     local Blur = Instance.new('BlurEffect')
@@ -412,87 +412,47 @@ do
     Blur.Name = 'LibBlur'
     Blur.Parent = Lighting
 
-    local MatrixGui = Instance.new('ScreenGui')
-    ProtectGui(MatrixGui)
-    MatrixGui.Name = 'MatrixPC'
-    MatrixGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    MatrixGui.DisplayOrder = 999
-    MatrixGui.Parent = CoreGui
+    local UEGui = Instance.new('ScreenGui')
+    ProtectGui(UEGui)
+    UEGui.Name = 'UELogo'
+    UEGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    UEGui.DisplayOrder = 999
+    UEGui.Parent = CoreGui
 
-    local PCChars = 'PCpcPc1337HACKhack><{}[]|/\\~`!@#$%^&*()_+-='
-    local Chars = {}
-    for i = 1, #PCChars do
-        table.insert(Chars, PCChars:sub(i, i))
-    end
+    local CenterFrame = Instance.new('Frame')
+    CenterFrame.Name = 'CenterFrame'
+    CenterFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    CenterFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    CenterFrame.Size = UDim2.new(0, 200, 0, 200)
+    CenterFrame.BackgroundTransparency = 1
+    CenterFrame.Parent = UEGui
 
-    local Columns = {}
-    local ColumnCount = 25
+    local UELabel = Instance.new('TextLabel')
+    UELabel.Name = 'UELabel'
+    UELabel.AnchorPoint = Vector2.new(0.5, 0.5)
+    UELabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+    UELabel.Size = UDim2.new(1, 0, 1, 0)
+    UELabel.BackgroundTransparency = 1
+    UELabel.Font = Enum.Font.Code
+    UELabel.TextSize = 72
+    UELabel.Text = "UE"
+    UELabel.TextColor3 = Color3.new(1, 1, 1)
+    UELabel.TextStrokeTransparency = 0.3
+    UELabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    UELabel.Parent = CenterFrame
 
-    for i = 1, ColumnCount do
-        local col = Instance.new('Frame')
-        col.Name = 'Col' .. i
-        col.BackgroundTransparency = 1
-        col.Size = UDim2.new(1 / ColumnCount, 0, 1, 0)
-        col.Position = UDim2.new((i - 1) / ColumnCount, 0, 0, 0)
-        col.Parent = MatrixGui
+    local UICorner = Instance.new('UICorner')
+    UICorner.CornerRadius = UDim.new(1, 0)
+    UICorner.Parent = CenterFrame
 
-        local layout = Instance.new('UIListLayout')
-        layout.FillDirection = Enum.FillDirection.Vertical
-        layout.SortOrder = Enum.SortOrder.LayoutOrder
-        layout.Padding = UDim.new(0, -2)
-        layout.Parent = col
-
-        Columns[i] = { Frame = col, Labels = {}, Speed = math.random(10, 30) / 10, Offset = math.random(0, 100) }
-    end
-
-    local function SpawnChar(colIdx)
-        local col = Columns[colIdx]
-        if not col then return end
-
-        local wrapper = Instance.new('Frame')
-        wrapper.Size = UDim2.new(1, 0, 0, 14)
-        wrapper.BackgroundTransparency = 1
-        wrapper.LayoutOrder = tick() + math.random()
-        wrapper.ClipsDescendants = false
-        wrapper.Parent = col.Frame
-
-        local label = Instance.new('TextLabel')
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 1
-        label.Font = Enum.Font.Code
-        label.TextSize = 12
-        label.Text = Chars[math.random(1, #Chars)]
-        label.TextColor3 = Color3.fromRGB(0, math.random(100, 200), 0)
-        label.TextStrokeTransparency = 0.5
-        label.TextStrokeColor3 = Color3.new(0, 0, 0)
-        label.Parent = wrapper
-        label.TextTransparency = 0
-
-        table.insert(col.Labels, wrapper)
-
-        local rotDir = math.random() > 0.5 and 1 or -1
-        local rotSpeed = math.random(80, 200)
-        local elapsed = 0
-
-        task.spawn(function()
-            while wrapper and wrapper.Parent and elapsed < 4 do
-                local dt = task.wait()
-                elapsed = elapsed + dt
-                label.Rotation = label.Rotation + rotDir * rotSpeed * dt
-                label.TextTransparency = math.clamp(elapsed / 4, 0, 1)
-                if math.random() > 0.85 then
-                    label.Text = Chars[math.random(1, #Chars)]
-                    label.TextColor3 = Color3.fromRGB(0, math.random(120, 255), 0)
-                end
-            end
-            if wrapper and wrapper.Parent then
-                wrapper:Destroy()
-            end
-        end)
-    end
+    local UIStroke = Instance.new('UIStroke')
+    UIStroke.Color = Color3.new(1, 1, 1)
+    UIStroke.Thickness = 2
+    UIStroke.Transparency = 0.5
+    UIStroke.Parent = CenterFrame
 
     Library.MatrixBlur = Blur
-    Library.MatrixGui = MatrixGui
+    Library.MatrixGui = UEGui
 
     Library._MatrixActive = false
 
@@ -500,29 +460,22 @@ do
         if Library._MatrixActive then return end
         Library._MatrixActive = true
 
+        CenterFrame.Visible = true
+        local angle = 0
+
         task.spawn(function()
             while Library._MatrixActive do
-                for i = 1, #Columns do
-                    if math.random() > 0.5 then
-                        task.spawn(SpawnChar, i)
-                    end
-                end
-
-                for i, col in ipairs(Columns) do
-                    for j = #col.Labels, 1, -1 do
-                        if not col.Labels[j].Parent then
-                            table.remove(col.Labels, j)
-                        end
-                    end
-                end
-
-                task.wait(0.1)
+                local dt = task.wait()
+                angle = angle + 120 * dt
+                UELabel.Rotation = angle
             end
         end)
     end
 
     function Library:StopMatrix()
         Library._MatrixActive = false
+        CenterFrame.Visible = false
+        UELabel.Rotation = 0
     end
 
     function Library:ToggleBlur(On)
