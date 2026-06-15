@@ -37,7 +37,7 @@ local Library = {
     RiskColor = Color3.fromRGB(255, 50, 50),
 
     Black = Color3.new(0, 0, 0);
-    Font = Enum.Font.Code,
+    Font = Font.new("rbxassetid://11702779409", Enum.FontWeight.Regular, Enum.FontStyle.Normal),
 
     OpenedFrames = {};
     DependencyBoxes = {};
@@ -449,7 +449,7 @@ do
         label.Position = UDim2.new(0.5, 0, 0.5, 0)
         label.Size = UDim2.new(1, 0, 1, 0)
         label.BackgroundTransparency = 1
-        label.Font = Enum.Font.Code
+        label.Font = Font.new("rbxassetid://11702779409", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
         label.TextSize = 72
         label.Text = "UE"
         label.RichText = false
@@ -493,12 +493,12 @@ do
                 local dt = task.wait()
                 elapsed = elapsed + dt
 
-                local swing = math.sin(elapsed * 1.8) * 18
+                local angle = elapsed * 60
 
                 for _, layer in ipairs(layers) do
-                    local offset = (1 - layer.Depth) * swing * 0.5
+                    local offset = (1 - layer.Depth) * math.sin(elapsed * 2) * 30
                     layer.Label.Position = UDim2.new(0.5, offset, 0.5, 0)
-                    layer.Label.Rotation = swing * (1 - layer.Depth) * 0.3
+                    layer.Label.Rotation = angle * (1 - layer.Depth) * 0.4
                 end
             end
         end)
